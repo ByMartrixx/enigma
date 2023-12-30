@@ -12,6 +12,7 @@ import org.quiltmc.enigma.gui.GuiController;
 import org.quiltmc.enigma.gui.config.theme.Themes;
 import org.quiltmc.enigma.gui.config.Config;
 import org.quiltmc.enigma.gui.config.keybind.KeyBinds;
+import org.quiltmc.enigma.gui.element.EditorPane;
 import org.quiltmc.enigma.gui.element.EditorPopupMenu;
 import org.quiltmc.enigma.gui.element.NavigatorPanel;
 import org.quiltmc.enigma.gui.event.EditorActionListener;
@@ -39,6 +40,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -70,7 +72,7 @@ import javax.swing.text.Highlighter.HighlightPainter;
 
 public class EditorPanel {
 	private final JPanel ui = new JPanel();
-	private final JEditorPane editor = new JEditorPane();
+	private final JEditorPane editor = new EditorPane();
 	private final JScrollPane editorScrollPane = new JScrollPane(this.editor);
 	private final EditorPopupMenu popupMenu;
 
@@ -206,6 +208,29 @@ public class EditorPanel {
 		this.retryButton.addActionListener(e -> this.redecompileClass());
 
 		this.ui.putClientProperty(EditorPanel.class, this);
+
+		this.editor.setToolTipText("Lorem ipsum dolor sit amet");
+		this.editor.addMouseMotionListener(new MouseAdapter() {
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				int x = e.getX();
+				int y = e.getY();
+				int pos = EditorPanel.this.editor.viewToModel2D(new Point(x - 4, y)); // TODO: x offset shouldn't be hardcoded
+
+				var ref = EditorPanel.this.getReference(EditorPanel.this.getToken(pos));
+				var entry = ref == null ? null : ref.entry;
+				// EditorPanel.this.editor.setToolTipText("(" + x + ", " + y + ") (" + pos + ") " + ref + ": " + entry);
+				if (ref != null) {
+					var remapper = EditorPanel.this.controller.getProject().getRemapper();
+					String jd = remapper.getMapping(entry).javadoc();
+					// EditorPanel.this.editor.setToolTipText("(" + x + ", " + y + ") (" + pos + ") " + jd);
+					EditorPanel.this.editor.setToolTipText(jd);
+				} else {
+					// EditorPanel.this.editor.setToolTipText("(" + x + ", " + y + ") (" + pos + ") " + ref);
+					EditorPanel.this.editor.setToolTipText(null);
+				}
+			}
+		});
 	}
 
 	public void onRename(Entry<?> target) {
